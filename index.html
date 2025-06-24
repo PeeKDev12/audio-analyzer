@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Audio Analyzer</title>
   <style>
     canvas {
@@ -91,52 +91,74 @@
       const spectrumMid = document.getElementById('spectrum-mid');
       const spectrumHigh = document.getElementById('spectrum-high');
 
+      const canvasWidth = window.innerWidth;
+      const canvasHeight = 120;
+      const marginLeft = 40;
+
       const canvases = [waveformCanvas, spectrumFull, spectrumLow, spectrumMid, spectrumHigh];
       const ctxs = canvases.map(c => {
-        c.width = window.innerWidth;
-        c.height = 120;
+        c.width = canvasWidth;
+        c.height = canvasHeight;
         return c.getContext('2d');
       });
 
-      function draw() {
-        requestAnimationFrame(draw); // Always keep the loop running
+      function drawYAxis(ctx) {
+        ctx.fillStyle = "#333";
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
 
-        if (isPaused) return; // Skip updating when paused
+        // Draw 5 steps from 0 to 255
+        for (let i = 0; i <= 5; i++) {
+          const value = 255 - i * 51;
+          const y = (i * canvasHeight) / 5;
+          ctx.fillText(value.toString(), marginLeft - 5, y);
+        }
+      }
+
+      function draw() {
+        requestAnimationFrame(draw);
+        if (isPaused) return;
 
         analyser.getByteTimeDomainData(timeArray);
         analyser.getByteFrequencyData(dataArray);
 
-        // Waveform
+        // Draw waveform
         const ctx = ctxs[0];
-        ctx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         ctx.beginPath();
         for (let i = 0; i < timeArray.length; i++) {
-          const x = i * waveformCanvas.width / timeArray.length;
-          const y = (timeArray[i] / 255) * waveformCanvas.height;
+          const x = i * (canvasWidth / timeArray.length);
+          const y = (timeArray[i] / 255) * canvasHeight;
           ctx.lineTo(x, y);
         }
         ctx.stroke();
 
+        // Draw FFTs
         function drawSpectrum(ctx, minHz, maxHz) {
           const minIndex = Math.floor(minHz / (audioCtx.sampleRate / 2) * bufferLength);
           const maxIndex = Math.floor(maxHz / (audioCtx.sampleRate / 2) * bufferLength);
-          ctx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+          // Draw Y-axis
+          drawYAxis(ctx);
+
           ctx.beginPath();
           for (let i = minIndex; i < maxIndex; i++) {
-            const x = (i - minIndex) * waveformCanvas.width / (maxIndex - minIndex);
-            const y = waveformCanvas.height - (dataArray[i] / 255) * waveformCanvas.height;
+            const x = marginLeft + ((i - minIndex) * (canvasWidth - marginLeft)) / (maxIndex - minIndex);
+            const y = canvasHeight - (dataArray[i] / 255) * canvasHeight;
             ctx.lineTo(x, y);
           }
           ctx.stroke();
         }
 
-        drawSpectrum(ctxs[1], 20, 20000);   // Full spectrum
-        drawSpectrum(ctxs[2], 20, 1000);    // Low freq
-        drawSpectrum(ctxs[3], 1000, 3000);  // Mid freq
-        drawSpectrum(ctxs[4], 3000, 10000); // High freq
+        drawSpectrum(ctxs[1], 20, 20000);
+        drawSpectrum(ctxs[2], 20, 1000);
+        drawSpectrum(ctxs[3], 1000, 3000);
+        drawSpectrum(ctxs[4], 3000, 10000);
       }
 
-      draw(); // start the animation loop
+      draw();
     }
   </script>
 </body>
