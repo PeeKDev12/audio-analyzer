@@ -1,32 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-  
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8" />
   <title>Audio Analyzer</title>
   <style>
-    canvas { width: 100%; height: 120px; display: block; margin-bottom: 10px; border: 1px solid #ccc; }
-    body { font-family: sans-serif; margin: 20px; background: #f9f9f9; }
-    h2 { color: #333; }
+    canvas {
+      width: 100%;
+      height: 120px;
+      display: block;
+      margin-bottom: 5px;
+      border: 1px solid #ccc;
+    }
+    .label {
+      font-size: 0.85em;
+      color: #555;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+    }
+    h2 {
+      color: #333;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 15px;
+      margin-right: 10px;
+      font-size: 1em;
+    }
   </style>
 </head>
 <body>
   <h2>🎧 Real-Time Audio Analyzer</h2>
-  <button id="startBtn">Start Audio Analyzer</button>
 
+  <div class="controls">
+    <button id="startBtn">Start Audio Analyzer</button>
+    <button id="pauseBtn" style="display: none;">Pause</button>
+  </div>
 
   <canvas id="waveform"></canvas>
+
   <canvas id="spectrum-full"></canvas>
+  <div class="label">Full Spectrum: 20 Hz – 20,000 Hz</div>
+
   <canvas id="spectrum-low"></canvas>
+  <div class="label">Low Frequencies: 20 Hz – 1,000 Hz</div>
+
   <canvas id="spectrum-mid"></canvas>
+  <div class="label">Mid Frequencies: 1,000 Hz – 3,000 Hz</div>
+
   <canvas id="spectrum-high"></canvas>
+  <div class="label">High Frequencies: 3,000 Hz – 10,000 Hz</div>
 
   <script>
+    let animationId;
+    let isPaused = false;
+
     document.getElementById('startBtn').addEventListener('click', () => {
-    startAudio().catch(err => alert('Microphone access denied or error: ' + err));
-    document.getElementById('startBtn').style.display = 'none';
-  });
+      startAudio().catch(err => alert('Microphone access denied or error: ' + err));
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('pauseBtn').style.display = 'inline-block';
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      isPaused = !isPaused;
+      document.getElementById('pauseBtn').innerText = isPaused ? 'Resume' : 'Pause';
+      if (!isPaused) draw(); // resume drawing loop
+    });
+
     async function startAudio() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -54,7 +101,9 @@
       });
 
       function draw() {
-        requestAnimationFrame(draw);
+        if (isPaused) return;
+
+        animationId = requestAnimationFrame(draw);
         analyser.getByteTimeDomainData(timeArray);
         analyser.getByteFrequencyData(dataArray);
 
@@ -90,7 +139,6 @@
 
       draw();
     }
-
   </script>
 </body>
 </html>
