@@ -59,7 +59,6 @@
   <div class="label">High Frequencies: 3,000 Hz – 10,000 Hz</div>
 
   <script>
-    let animationId;
     let isPaused = false;
 
     document.getElementById('startBtn').addEventListener('click', () => {
@@ -69,13 +68,8 @@
     });
 
     document.getElementById('pauseBtn').addEventListener('click', () => {
-    isPaused = !isPaused;
-    document.getElementById('pauseBtn').innerText = isPaused ? 'Resume' : 'Pause';
-    
-    if (!isPaused) {
-      // Restart the drawing loop
-      draw();
-    }
+      isPaused = !isPaused;
+      document.getElementById('pauseBtn').innerText = isPaused ? 'Resume' : 'Pause';
     });
 
     async function startAudio() {
@@ -105,9 +99,10 @@
       });
 
       function draw() {
-        if (isPaused) return;
+        requestAnimationFrame(draw); // Always keep the loop running
 
-        animationId = requestAnimationFrame(draw);
+        if (isPaused) return; // Skip updating when paused
+
         analyser.getByteTimeDomainData(timeArray);
         analyser.getByteFrequencyData(dataArray);
 
@@ -141,7 +136,7 @@
         drawSpectrum(ctxs[4], 3000, 10000); // High freq
       }
 
-      draw();
+      draw(); // start the animation loop
     }
   </script>
 </body>
