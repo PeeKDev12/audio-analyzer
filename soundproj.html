@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8" />
   <title>Audio Analyzer</title>
   <style>
@@ -11,6 +12,8 @@
 </head>
 <body>
   <h2>🎧 Real-Time Audio Analyzer</h2>
+  <button id="startBtn">Start Audio Analyzer</button>
+
 
   <canvas id="waveform"></canvas>
   <canvas id="spectrum-full"></canvas>
@@ -19,6 +22,10 @@
   <canvas id="spectrum-high"></canvas>
 
   <script>
+    document.getElementById('startBtn').addEventListener('click', () => {
+    startAudio().catch(err => alert('Microphone access denied or error: ' + err));
+    document.getElementById('startBtn').style.display = 'none';
+  });
     async function startAudio() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -83,7 +90,6 @@
       draw();
     }
 
-    startAudio().catch(err => alert('Microphone access denied or error: ' + err));
   </script>
 </body>
 </html>
