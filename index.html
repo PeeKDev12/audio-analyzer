@@ -107,13 +107,18 @@
         ctx.font = "10px sans-serif";
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
+        ctx.beginPath();
+        ctx.strokeStyle = "#ccc";
 
-        // Draw 5 steps from 0 to 255
-        for (let i = 0; i <= 5; i++) {
-          const value = 255 - i * 51;
-          const y = (i * canvasHeight) / 5;
+        const steps = [255, 192, 128, 64, 0];
+        steps.forEach(value => {
+          const y = canvasHeight - (value / 255) * canvasHeight;
           ctx.fillText(value.toString(), marginLeft - 5, y);
-        }
+          ctx.moveTo(marginLeft, y);
+          ctx.lineTo(canvasWidth, y);
+        });
+
+        ctx.stroke();
       }
 
       function draw() {
@@ -123,7 +128,7 @@
         analyser.getByteTimeDomainData(timeArray);
         analyser.getByteFrequencyData(dataArray);
 
-        // Draw waveform
+        // Waveform (no Y-axis for waveform)
         const ctx = ctxs[0];
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         ctx.beginPath();
@@ -134,16 +139,16 @@
         }
         ctx.stroke();
 
-        // Draw FFTs
+        // FFT spectrum drawing
         function drawSpectrum(ctx, minHz, maxHz) {
           const minIndex = Math.floor(minHz / (audioCtx.sampleRate / 2) * bufferLength);
           const maxIndex = Math.floor(maxHz / (audioCtx.sampleRate / 2) * bufferLength);
-          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-          // Draw Y-axis
+          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
           drawYAxis(ctx);
 
           ctx.beginPath();
+          ctx.strokeStyle = "#000";
           for (let i = minIndex; i < maxIndex; i++) {
             const x = marginLeft + ((i - minIndex) * (canvasWidth - marginLeft)) / (maxIndex - minIndex);
             const y = canvasHeight - (dataArray[i] / 255) * canvasHeight;
@@ -152,10 +157,10 @@
           ctx.stroke();
         }
 
-        drawSpectrum(ctxs[1], 20, 20000);
-        drawSpectrum(ctxs[2], 20, 1000);
-        drawSpectrum(ctxs[3], 1000, 3000);
-        drawSpectrum(ctxs[4], 3000, 10000);
+        drawSpectrum(ctxs[1], 20, 20000);   // Full spectrum
+        drawSpectrum(ctxs[2], 20, 1000);    // Low frequencies
+        drawSpectrum(ctxs[3], 1000, 3000);  // Mid frequencies
+        drawSpectrum(ctxs[4], 3000, 10000); // High frequencies
       }
 
       draw();
