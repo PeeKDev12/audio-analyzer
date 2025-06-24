@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Audio Analyzer</title>
+  <style>
+    canvas { width: 100%; height: 120px; display: block; margin-bottom: 10px; border: 1px solid #ccc; }
+    body { font-family: sans-serif; margin: 20px; background: #f9f9f9; }
+    h2 { color: #333; }
+  </style>
+</head>
+<body>
+  <h2>🎧 Real-Time Audio Analyzer</h2>
+
+  <canvas id="waveform"></canvas>
+  <canvas id="spectrum-full"></canvas>
+  <canvas id="spectrum-low"></canvas>
+  <canvas id="spectrum-mid"></canvas>
+  <canvas id="spectrum-high"></canvas>
+
+  <script>
+    async function startAudio() {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+
+      analyser.fftSize = 2048;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      const timeArray = new Uint8Array(bufferLength);
+
+      source.connect(analyser);
+
+      const waveformCanvas = document.getElementById('waveform');
+      const spectrumFull = document.getElementById('spectrum-full');
+      const spectrumLow = document.getElementById('spectrum-low');
+      const spectrumMid = document.getElementById('spectrum-mid');
+      const spectrumHigh = document.getElementById('spectrum-high');
+
+      const canvases = [waveformCanvas, spectrumFull, spectrumLow, spectrumMid, spectrumHigh];
+      const ctxs = canvases.map(c => {
+        c.width = window.innerWidth;
+        c.height = 120;
+        return c.getContext('2d');
+      });
+
+      function draw() {
+        requestAnimationFrame(draw);
+        analyser.getByteTimeDomainData(timeArray);
+        analyser.getByteFrequencyData(dataArray);
+
+        // Waveform
+        const ctx = ctxs[0];
+        ctx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+        ctx.beginPath();
+        for (let i = 0; i < timeArray.length; i++) {
+          const x = i * waveformCanvas.width / timeArray.length;
+          const y = (timeArray[i] / 255) * waveformCanvas.height;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        function drawSpectrum(ctx, minHz, maxHz) {
+          const minIndex = Math.floor(minHz / (audioCtx.sampleRate / 2) * bufferLength);
+          const maxIndex = Math.floor(maxHz / (audioCtx.sampleRate / 2) * bufferLength);
+          ctx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+          ctx.beginPath();
+          for (let i = minIndex; i < maxIndex; i++) {
+            const x = (i - minIndex) * waveformCanvas.width / (maxIndex - minIndex);
+            const y = waveformCanvas.height - (dataArray[i] / 255) * waveformCanvas.height;
+            ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+
+        drawSpectrum(ctxs[1], 20, 20000);   // Full spectrum
+        drawSpectrum(ctxs[2], 20, 1000);    // Low freq
+        drawSpectrum(ctxs[3], 1000, 3000);  // Mid freq
+        drawSpectrum(ctxs[4], 3000, 10000); // High freq
+      }
+
+      draw();
+    }
+
+    startAudio().catch(err => alert('Microphone access denied or error: ' + err));
+  </script>
+</body>
+</html>
